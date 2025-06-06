@@ -26,7 +26,9 @@ class ReviewService:
 
     def __ru_prompt(self, diff: str, user_message: str) -> str:
         return f"""Проанализируй изменения в коде (в формате diff из git):
+```
 {diff}
+```
 
 Проверь:
 0. Ничего не пиши про diff (изменения в нем, сам формат, описание изменений), изменения представлены в данном формате только для удобств анализа
@@ -34,14 +36,17 @@ class ReviewService:
 2. Потенциальные баги
 3. Уязвимости безопасности
 4. Возможности рефакторинга
+5. Отвечай на русском языке
 {f"Дополнительное условие от пользователя: {user_message}" if user_message is not None else ""}
 
-Ответ оформи в виде списка с метками: ✅ Плюсы,⚠️ Проблемы,💡 Советы{f", ответ на дополнительное условие пользователя" if user_message is not None else ""}
+Ответ оформи в виде списка с метками: ✅ Плюсы,⚠️ Проблемы,💡 Советы{f", 🙎‍♂️ответ на дополнительное условие пользователя" if user_message is not None else ""}
 """
     
     def __en_prompt(self, diff: str, user_message: str) -> str:
         return f"""Analyze the changes in the code (in diff format from git):
+```
 {diff}
+```
 
 Check:
 0. Do not write anything about the diff (changes in it, the format itself, description of changes), the changes are presented in this format only for the convenience of analysis
@@ -49,7 +54,8 @@ Check:
 2. Potential bugs
 3. Security vulnerabilities
 4. Refactoring opportunities
+5. Answer in English language
 {f"Additional condition from the user: {user_message}" if user_message is not None else ""}
 
-Format your answer as a list with tags: ✅ Pros, ⚠️ Problems, 💡 Tips{f", response to additional user condition" if user_message is not None else ""}
+Format your answer as a list with tags: ✅ Pros, ⚠️ Problems, 💡 Tips{f", 🙎‍♂️response to additional user condition" if user_message is not None else ""}
 """
