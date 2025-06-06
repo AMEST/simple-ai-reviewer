@@ -32,8 +32,14 @@ At now, supports only Gitea
    ```
 
 3. Configure the application:
-   - Edit `appsettings.json` with your Gitea credentials and AI settings
-   - Configure webhook in your Gitea repository to point to the reviewer service: `https://your-domain-with-running-service/webhook/gitea?token=TOKEN_FROM_APPSETTINGS`. **Select only `Comments in PR event` when configuring webhook in Gitea**.
+   - Configure Gitea:
+     - Create user (example: `ai-reviewer`)
+     - Create Token for user
+     - Add this user to your repositories as co-author
+     - Configure webhook in your Gitea repository. 
+       - Endpoint: `https://your-domain-with-running-service/webhook/gitea?token=TOKEN_FROM_APPSETTINGS`
+       - Select only one webhook event: Comments in pull request
+   - Edit `appsettings.json` with your Gitea credentials (base url and token from `ai-reviewer` user) and AI settings
 
 4. Run the service:
    ```bash
