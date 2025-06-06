@@ -1,0 +1,5 @@
+requests
+flask
+openai
+https://github.com/AMEST/py_configuration_builder/archive/refs/heads/main.tar.gz
+https://github.com/AMEST/py_simple_container/archive/refs/heads/master.tar.gz

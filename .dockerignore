@@ -1,0 +1,20 @@
+.git/
+.vscode/
+
+build
+dist
+*.egg-info
+*.egg/
+*.pyc
+*.swp
+.usersecrets
+*.env
+.env
+
+.tox
+.coverage
+html/*
+__pycache__
+
+# Compiled Documentation
+docs/_build
