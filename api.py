@@ -1,8 +1,8 @@
 from flask import Flask, request
 import logging
 from services.gitea_service import GiteaService
+from services.queue.task_queue import TaskQueue
 from services.review_service import ReviewService
-from utils.diff_utils import split_diff
 
 from configuration.web_configuration import WebConfiguration
 
@@ -10,10 +10,11 @@ from contracts.gitea_webhook import GiteaWebhook
 from contracts.gitea_pr_url import GiteaPrUrl
 
 class Api:
-    def __init__(self, configuration: WebConfiguration, gitea_service: GiteaService, review_service: ReviewService):
+    def __init__(self, configuration: WebConfiguration, gitea_service: GiteaService, review_service: ReviewService, queue: TaskQueue):
         self.configuration = configuration
         self.gitea_service = gitea_service
         self.review_service = review_service
+        self.queue = queue
         self.logger = logging.getLogger(Api.__name__)
         self.app = Flask(__name__)
         self.app.before_request(self.__require_api_auth)
@@ -52,13 +53,7 @@ class Api:
             return "", 200
         self.logger.info(f"Processing command: {webhook.comment.body}")
         gitea_pr_url = GiteaPrUrl.create_from_url(webhook.comment.pull_request_url)
+        self.queue.enqueue(gitea_pr_url)
 
-        self.logger.info(f"At first, get diff from repo {gitea_pr_url.owner}/{gitea_pr_url.repo} PR#{gitea_pr_url.pr_number}")
-        diff = self.gitea_service.get_pr_diff(gitea_pr_url)
-        self.logger.info(f"Send diff to LLM for review")
-        review_batch = self.review_service.review_pull_request(diff)
-        self.logger.info(f"Publish review in comments")
-        for review in review_batch:
-            self.gitea_service.post_comment(gitea_pr_url, review)
-        return "", 200
+        return "Review task enqueued", 200
 

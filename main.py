@@ -7,6 +7,7 @@ from services.gitea_service import GiteaService
 from services.ai.olama_ai_client import OllamaAIClient
 from services.ai.ai_client import AIClient
 from services.ai.openai_compatible_ai_client import OpenAICompatibleAIClient
+from services.queue.memory_task_queue import InMemoryTaskQueue
 from services.review_service import ReviewService
 
 from configuration.web_configuration import WebConfiguration
@@ -14,6 +15,7 @@ from configuration.gitea_configuration import GiteaConfiguration
 from configuration.llm_configuration import LLMConfiguration
 from configuration.review_configuration import ReviewConfiguration
 from configuration.llm_type import LLMType
+from worker import Worker
 
 #Initialize Container
 container = Container()
@@ -42,10 +44,14 @@ def llm_client_factory(services: Container) -> AIClient:
 
 container.register(AIClient, factory=llm_client_factory)
 container.register(GiteaService)
-container.register(Api)
 container.register(ReviewService)
+container.register(InMemoryTaskQueue)
+container.register(Api)
+container.register(Worker)
 
 
 if __name__ == "__main__":
+    worker : Worker = container.resolve(Worker)
+    worker.start()
     api : Api = container.resolve(Api)
     api.start()
