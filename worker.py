@@ -18,15 +18,16 @@ class Worker(threading.Thread):
 
     def run(self):
         while True:
-            time.sleep(60) # Check for new tasks every 60 seconds
             try:
                 review_task: ReviewTask  = self.queue.dequeue()
                 if review_task is None:
+                    time.sleep(60) # Check for new tasks every 60 seconds
                     continue
                 self.__process_gitea_review(review_task)
             except Exception as e:
                 self.logger.error(f"Error in worker thread: {e}", exc_info=True)
                 time.sleep(60 * 10) # Wait longer after an error
+            time.sleep(60) # Check for new tasks every 60 seconds
 
 
     def __process_gitea_review(self, review_task: ReviewTask) -> None:
@@ -40,5 +41,5 @@ class Worker(threading.Thread):
                 self.gitea_service.post_comment(pull_request, review)
             self.logger.info("Review completed")
         except Exception as e:
-            self.logger.error(f"Error during review process for PR #{pull_request.pr_number}: {e}", exc_info=True)
+            self.logger.error(f"Error during review process for PR {review_task.pull_request_url}: {e}", exc_info=True)
             time.sleep(60 * 10) # Wait longer after an error
