@@ -56,7 +56,7 @@ class Api:
             return "", 200
         self.logger.info(f"Processing command: {webhook.comment.body}")
         user_message = webhook.comment.body.replace(self.START_REVIEW_COMMAND, "").strip()
-        review_task = ReviewTask(webhook.comment.body, user_message if len(user_message) > 1 else None)
+        review_task = ReviewTask(webhook.comment.pull_request_url, user_message if len(user_message) > 1 else None)
         self.queue.enqueue(review_task)
         gitea_pr_url = GiteaPrUrl.create_from_url(webhook.comment.pull_request_url)
         self.logger.info(f"Review {gitea_pr_url.owner}/{gitea_pr_url.repo} #{gitea_pr_url.pr_number} enqueued")
