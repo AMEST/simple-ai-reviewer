@@ -15,12 +15,16 @@ class ReviewService:
 
     def review_pull_request(self, diff: str, user_message: str = None) -> list[str]:
         results = []
+        system_prompt = {
+            "role":"system", 
+            "content": "Ты инженер-программист с обширными знаниями, ты должен помочь провести ревью предложенного кода и выдать свой вердикт как попросил пользователь. Отвечать нужно строго на Русском Языке!" if self.configuration.language == Language.RU else "You are a software engineer with extensive knowledge, you must help review the proposed code and give your verdict as requested by the user. You must answer strictly in English!"
+        }
         splited_diff = split_diff(diff, 12000)
         self.logger.info(f"Received diff (len = {len(diff)}) for automatic review. Split to {len(splited_diff)} diffs")
         for diff_slice in splited_diff:
             file_names = "\n* ".join(get_files_from_diff(diff_slice))
             prompt = self.__en_prompt(diff_slice, user_message) if self.configuration.language == Language.EN else self.__ru_prompt(diff_slice, user_message)
-            review_result = self.ai_client.completions([{"role":"user","content":prompt}], self.llm_configuration.model)
+            review_result = self.ai_client.completions([system_prompt, {"role":"user","content":prompt}], self.llm_configuration.model)
             results.append(f"🤖 AI Code Review:\n\nFiles: \n* {file_names}\n\n{review_result}")
         return results
 
