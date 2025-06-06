@@ -6,8 +6,14 @@ The Simple AI Reviewer is designed to assist developers working alone. It aims t
 It's important to note that its outputs may be insightful, misleading, or entirely useless - treat its suggestions with a healthy dose of skepticism.  This tool is intended as a supplement to your own expertise, not a replacement for it.
 
 ## Technologies (Stack)
-*   Python 3.9 or higher
-*   Docker (for service distribution)
+*   Python 3.9+
+*   Flask (web framework)
+*   Requests (HTTP client)
+*   OpenAI (AI integration)
+*   py_configuration_builder (configuration management)
+*   py_simple_container (dependency injection)
+*   Docker (containerization)
+*   Gitea (git hosting integration)
 
 ## Compatibility with git hosting
 
@@ -15,11 +21,37 @@ At now, supports only Gitea
 
 ## Getting Started
 
-... write later
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/amest/simple-ai-reviewer.git
+   ```
+
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. Configure the application:
+   - Edit `appsettings.json` with your Gitea credentials and AI settings
+   - Configure webhook in your Gitea repository to point to the reviewer service: `https://your-domain-with-running-service/webhook/gitea?token=TOKEN_FROM_APPSETTINGS`. **Select only `Comments in PR event` when configuring webhook in Gitea**.
+
+4. Run the service:
+   ```bash
+   python main.py
+   ```
+
+   Or using Docker:
+   ```bash
+   docker build -t ai-reviewer .
+   docker run -p 8888:8888 ai-reviewer
+   ```
 
 ## Example Usage
 
-... write later
+1. Create a Pull Request in your Gitea repository
+2. Write comment in PR with text `/start_review`
+3. The AI Reviewer will automatically analyze the changes and post comments
+4. Review the suggestions and apply them as needed
 
 ## Notes
 
