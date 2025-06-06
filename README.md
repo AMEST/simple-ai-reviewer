@@ -39,7 +39,8 @@ At now, supports only Gitea
      - Configure webhook in your Gitea repository. 
        - Endpoint: `https://your-domain-with-running-service/webhook/gitea?token=TOKEN_FROM_APPSETTINGS`
        - Select only one webhook event: Comments in pull request
-   - Edit `appsettings.json` with your Gitea credentials (base url and token from `ai-reviewer` user) and AI settings
+   - Edit `appsettings.json` with your Gitea credentials (base url and token from `ai-reviewer` user) and AI settings.
+   See section `Configuration`
 
 4. Run the service:
    ```bash
@@ -51,6 +52,21 @@ At now, supports only Gitea
    docker build -t ai-reviewer .
    docker run -p 8888:8888 ai-reviewer
    ```
+### Configuration
+* web - section for configuring api
+  * host - bind address
+  * post - bind port
+  * token - authorization token for connection webhooks securely
+* gitea - section for configuring gitea api
+  * base_url - your gitea url
+  * token - personal access token for access to api
+* llm - section for configuring LLM provider
+  * type - provider type: `ollama`, `openai-compatible`
+  * base_url - url to ollama or openai compatible server
+  * model - model name for using in service
+  * token - api token for connect to openai-compatible server
+* review - section for configuring review behavior
+  * language - prompt language: `ru`, `en`
 
 ## Example Usage
 
