@@ -1,5 +1,6 @@
 from flask import Flask, request
 import logging
+from contracts.review_task import ReviewTask
 from services.gitea_service import GiteaService
 from services.queue.task_queue import TaskQueue
 from services.review_service import ReviewService
@@ -10,6 +11,8 @@ from contracts.gitea_webhook import GiteaWebhook
 from contracts.gitea_pr_url import GiteaPrUrl
 
 class Api:
+    START_REVIEW_COMMAND: str = "/start_review"
+
     def __init__(self, configuration: WebConfiguration, gitea_service: GiteaService, review_service: ReviewService, queue: TaskQueue):
         self.configuration = configuration
         self.gitea_service = gitea_service
@@ -49,11 +52,13 @@ class Api:
 
     def __webhook_route(self):
         webhook = self.__ensure_gitea_comment_event()
-        if webhook.action != "created" or webhook.comment is None or webhook.comment.body != "/start_review":
+        if webhook.action != "created" or webhook.comment is None or not webhook.comment.body.startswith(self.START_REVIEW_COMMAND):
             return "", 200
         self.logger.info(f"Processing command: {webhook.comment.body}")
+        user_message = webhook.comment.body.replace(self.START_REVIEW_COMMAND, "").strip()
+        review_task = ReviewTask(webhook.comment.body, user_message if len(user_message) > 1 else None)
+        self.queue.enqueue(review_task)
         gitea_pr_url = GiteaPrUrl.create_from_url(webhook.comment.pull_request_url)
-        self.queue.enqueue(gitea_pr_url)
         self.logger.info(f"Review {gitea_pr_url.owner}/{gitea_pr_url.repo} #{gitea_pr_url.pr_number} enqueued")
         return "Review task enqueued", 200
 
