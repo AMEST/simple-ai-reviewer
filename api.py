@@ -1,14 +1,15 @@
-from flask import Flask, request
 import logging
+
+from flask import Flask, request
+
+from configuration.web_configuration import WebConfiguration
+from contracts.gitea_pr_url import GiteaPrUrl
+from contracts.gitea_webhook import GiteaWebhook
 from contracts.review_task import ReviewTask
 from services.gitea_service import GiteaService
 from services.queue.task_queue import TaskQueue
 from services.review_service import ReviewService
 
-from configuration.web_configuration import WebConfiguration
-
-from contracts.gitea_webhook import GiteaWebhook
-from contracts.gitea_pr_url import GiteaPrUrl
 
 class Api:
     START_REVIEW_COMMAND: str = "/start_review"
@@ -24,6 +25,7 @@ class Api:
         self.__configure_routes()
 
     def start(self):
+        """ Start web api """
         self.app.run(host=self.configuration.host, port=self.configuration.port)
 
     def __configure_routes(self):
@@ -52,13 +54,22 @@ class Api:
 
     def __webhook_route(self):
         webhook = self.__ensure_gitea_comment_event()
-        if webhook.action != "created" or webhook.comment is None or not webhook.comment.body.startswith(self.START_REVIEW_COMMAND):
-            return "", 200
-        self.logger.info(f"Processing command: {webhook.comment.body}")
+        if webhook.action != "created" or webhook.comment is None:
+            return "Is not comment create event. Ignore event", 200 
+        if not webhook.comment.body.startswith(self.START_REVIEW_COMMAND):
+            return "Comment not start with /start_review. Ignore event", 200
+        user_email = webhook.comment.user.email if webhook.comment.user is not None else ""
+        if not self.gitea_service.is_allowed_user(user_email):
+            fail_response = f"User {user_email} not allowed to start review"
+            self.logger.warning(fail_response)
+            return fail_response, 403
+        
+        self.logger.info("Processing command: %s", webhook.comment.body)
         user_message = webhook.comment.body.replace(self.START_REVIEW_COMMAND, "").strip()
         review_task = ReviewTask(webhook.comment.pull_request_url, user_message if len(user_message) > 5 else None)
         self.queue.enqueue(review_task)
+
         gitea_pr_url = GiteaPrUrl.create_from_url(webhook.comment.pull_request_url)
-        self.logger.info(f"Review {gitea_pr_url.owner}/{gitea_pr_url.repo} #{gitea_pr_url.pr_number} enqueued")
+        self.logger.info("Review %s/%s #%s enqueued", gitea_pr_url.owner, gitea_pr_url.repo, gitea_pr_url.pr_number)
         return "Review task enqueued", 200
 

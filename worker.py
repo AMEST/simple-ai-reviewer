@@ -25,7 +25,7 @@ class Worker(threading.Thread):
                     continue
                 self.__process_gitea_review(review_task)
             except Exception as e:
-                self.logger.error(f"Error in worker thread: {e}", exc_info=True)
+                self.logger.error("Error in worker thread: %s", e, exc_info=True)
                 time.sleep(60 * 10) # Wait longer after an error
             time.sleep(60) # Check for new tasks every 60 seconds
 
@@ -33,7 +33,7 @@ class Worker(threading.Thread):
     def __process_gitea_review(self, review_task: ReviewTask) -> None:
         try:
             pull_request = GiteaPrUrl.create_from_url(review_task.pull_request_url)
-            self.logger.info(f"Start review {pull_request.owner}/{pull_request.repo} #{pull_request.pr_number}")
+            self.logger.info("Start review %s/%s #%s", pull_request.owner, pull_request.repo, pull_request.pr_number)
             diff = self.gitea_service.get_pr_diff(pull_request)
             self.logger.info("Send diff to LLM for review")
             review_batch = self.review_service.review_pull_request(diff, review_task.user_message)
@@ -41,5 +41,5 @@ class Worker(threading.Thread):
                 self.gitea_service.post_comment(pull_request, review)
             self.logger.info("Review completed")
         except Exception as e:
-            self.logger.error(f"Error during review process for PR {review_task.pull_request_url}: {e}", exc_info=True)
+            self.logger.error("Error during review process for PR %s: %s", review_task.pull_request_url, e, exc_info=True)
             time.sleep(60 * 10) # Wait longer after an error
