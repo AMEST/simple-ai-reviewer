@@ -3,7 +3,7 @@ import logging
 from flask import Flask, request
 
 from configuration.web_configuration import WebConfiguration
-from contract.github_webhook import GithubWebhook
+from contracts.github_webhook import GithubWebhook
 from contracts.pr_url import PrUrl
 from contracts.gitea_webhook import GiteaWebhook
 from contracts.review_task import ReviewTask
