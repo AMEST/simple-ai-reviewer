@@ -1,6 +1,19 @@
 import re
 
 def split_diff(diff: str, max_length: int) -> list[str]:
+    """
+    Split a git diff into chunks that are smaller than the specified maximum length.
+    
+    The function preserves the structure of the diff by keeping related changes together.
+    If a single block of changes exceeds the maximum length, it will be kept as a single chunk.
+    
+    Args:
+        diff (str): The git diff content to split
+        max_length (int): Maximum length for each chunk in characters
+        
+    Returns:
+        list[str]: List of diff chunks, each smaller than max_length
+    """
     if not diff:
         return []
     blocks = []
@@ -41,13 +54,13 @@ def split_diff(diff: str, max_length: int) -> list[str]:
 
 def get_files_from_diff(diff_text):
     """
-    Extracts file names from a diff text.
-
+    Extract file names from a git diff text.
+    
     Args:
-    diff_text: The diff text as a string.
-
+        diff_text (str): The git diff content to analyze
+        
     Returns:
-    A list of file names.
+        list[str]: List of unique file names found in the diff
     """
     files = []
     for line in diff_text.splitlines():

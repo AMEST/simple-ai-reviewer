@@ -7,13 +7,43 @@ from configuration.llm_configuration import LLMConfiguration
 from utils.diff_utils import split_diff, get_files_from_diff
 
 class ReviewService:
+    """
+    Service for performing code reviews using AI.
+    
+    This service analyzes pull request diffs and provides code review feedback
+    using an AI client. Supports both Russian and English languages.
+    
+    Attributes:
+        configuration (ReviewConfiguration): Configuration for review settings
+        llm_configuration (LLMConfiguration): Configuration for the language model
+        ai_client (AIClient): The AI client used for generating reviews
+        logger (logging.Logger): Logger instance for service operations
+    """
     def __init__(self, configuration: ReviewConfiguration, llm_configuration: LLMConfiguration, ai_client : AIClient):
+        """
+        Initialize the ReviewService with configurations and AI client.
+        
+        Args:
+            configuration (ReviewConfiguration): Configuration for review settings
+            llm_configuration (LLMConfiguration): Configuration for the language model
+            ai_client (AIClient): The AI client to use for generating reviews
+        """
         self.configuration = configuration
         self.llm_configuration = llm_configuration
         self.ai_client = ai_client
         self.logger = logging.getLogger(ReviewService.__name__)
 
     def review_pull_request(self, diff: str, user_message: str = None) -> list[str]:
+        """
+        Perform a code review on a pull request diff.
+        
+        Args:
+            diff (str): The git diff content to review
+            user_message (str, optional): Additional instructions from the user
+            
+        Returns:
+            list[str]: List of review results, one for each diff chunk
+        """
         results = []
         system_prompt = {
             "role":"system", 
@@ -29,6 +59,16 @@ class ReviewService:
         return results
 
     def __ru_prompt(self, diff: str, user_message: str) -> str:
+        """
+        Generate a Russian language prompt for the AI review.
+        
+        Args:
+            diff (str): The git diff content to review
+            user_message (str): Additional instructions from the user
+            
+        Returns:
+            str: Formatted prompt in Russian
+        """
         return f"""Проанализируй изменения в коде (в формате diff из git):
 ```
 {diff}
@@ -47,6 +87,16 @@ class ReviewService:
 """
     
     def __en_prompt(self, diff: str, user_message: str) -> str:
+        """
+        Generate an English language prompt for the AI review.
+        
+        Args:
+            diff (str): The git diff content to review
+            user_message (str): Additional instructions from the user
+            
+        Returns:
+            str: Formatted prompt in English
+        """
         return f"""Analyze the changes in the code (in diff format from git):
 ```
 {diff}

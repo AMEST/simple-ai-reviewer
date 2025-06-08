@@ -13,11 +13,10 @@ It's important to note that its outputs may be insightful, misleading, or entire
 *   py_configuration_builder (configuration management)
 *   py_simple_container (dependency injection)
 *   Docker (containerization)
-*   Gitea (git hosting integration)
 
 ## Compatibility with git hosting
 
-At now, supports only Gitea
+At now, supports only Gitea and Github
 
 ## Getting Started
 
@@ -31,14 +30,11 @@ At now, supports only Gitea
    pip install -r requirements.txt
    ```
 
-3. Configure the application:
-   - Configure Gitea:
-     - Create user (example: `ai-reviewer`)
-     - Create Token for user
-     - Add this user to your repositories as co-author
-     - Configure webhook in your Gitea repository. 
-       - Endpoint: `https://your-domain-with-running-service/webhook/gitea?token=TOKEN_FROM_APPSETTINGS`
-       - Select only one webhook event: Comments in pull request
+3. Configure application and git integration:
+   - If using Gitea - [configure Gitea ](#gitea)
+   - If using Github - [configure Github ](#github)
+   - [Configure application](#application)
+
    - Edit `appsettings.json` with your Gitea credentials (base url and token from `ai-reviewer` user) and AI settings.
    See section `Configuration`
 
@@ -53,6 +49,29 @@ At now, supports only Gitea
    docker run -p 8888:8888 ai-reviewer
    ```
 ### Configuration
+
+#### Gitea
+- Create user (example: `ai-reviewer`) **_Optional_**
+- Create Token for user
+- Add this user to your repositories as co-author **_Optional if user created_**
+- Configure webhook in your Gitea repository. 
+  - Endpoint: `https://your-domain-with-running-service/webhook/gitea?token=TOKEN_FROM_APPSETTINGS`
+  - Content type: `application/json`
+  - Select only one webhook event: Pull Request Comment
+
+#### Github
+- Create user (example: `{generated-username}-ai-reviewer`) **_Optional_**
+- Create Token for user
+  - Contents: Read-only
+  - Issues: Read and write
+  - Pull requests: Read and write
+- Add this user to your repositories as co-author **_Optional if user created_**
+- Configure webhook in your Github repository. 
+  - Endpoint: `https://your-domain-with-running-service/webhook/github?token=TOKEN_FROM_APPSETTINGS`
+  - Content type: `application/json`
+  - Select only one webhook event: **Issue comments**
+
+#### Application
 * web - section for configuring api
   * host - bind address
   * post - bind port
@@ -60,6 +79,10 @@ At now, supports only Gitea
 * gitea - section for configuring gitea api
   * base_url - your gitea url
   * token - personal access token for access to api
+  * allowed_emails - email list (separated by `;` or `,`) with users, who can run review
+* github - section for configuring github api
+  * token - personal access token for access to api
+  * allowed_logins - logins list (separated by `;` or `,`) with users, who can run review
 * llm - section for configuring LLM provider
   * type - provider type: `ollama`, `openai-compatible`
   * base_url - url to ollama or openai compatible server
@@ -70,7 +93,7 @@ At now, supports only Gitea
 
 ## Example Usage
 
-1. Create a Pull Request in your Gitea repository
+1. Create a Pull Request in your Gitea/Github repository
 2. Write comment in PR with text `/start_review`
 3. The AI Reviewer will automatically analyze the changes and post comments
 4. Review the suggestions and apply them as needed
