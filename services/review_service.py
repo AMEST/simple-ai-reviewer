@@ -49,7 +49,7 @@ class ReviewService:
             "role":"system", 
             "content": "Ты инженер-программист с обширными знаниями, ты должен помочь провести ревью предложенного кода и выдать свой вердикт как попросил пользователь. Отвечать нужно строго на Русском Языке!" if self.configuration.language == Language.RU else "You are a software engineer with extensive knowledge, you must help review the proposed code and give your verdict as requested by the user. You must answer strictly in English!"
         }
-        splited_diff = split_diff(diff, 12000)
+        splited_diff = split_diff(diff, 12000, self.configuration.ignore_files)
         self.logger.info(f"Received diff (len = {len(diff)}) for automatic review. Split to {len(splited_diff)} diffs")
         for diff_slice in splited_diff:
             file_names = "\n* ".join(get_files_from_diff(diff_slice))

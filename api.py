@@ -1,4 +1,5 @@
 import logging
+from dataclasses import fields
 
 from flask import Flask, request
 
@@ -89,7 +90,8 @@ class Api:
         if gitea_event is None or gitea_event != "issue_comment":
             return None
         request_json = request.get_json()
-        return GiteaWebhook(**request_json)
+        webhook_fields = {f.name for f in fields(GiteaWebhook)}
+        return GiteaWebhook(**{k: v for k, v in request_json.items() if k in webhook_fields})
     
     def __ensure_github_comment_event(self) -> GithubWebhook:
         """

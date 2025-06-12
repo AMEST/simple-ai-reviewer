@@ -1,6 +1,7 @@
+from typing import Optional
 import re
 
-def split_diff(diff: str, max_length: int) -> list[str]:
+def split_diff(diff: str, max_length: int, ignore_files: Optional[list[str]] = None) -> list[str]:
     """
     Split a git diff into chunks that are smaller than the specified maximum length.
     
@@ -10,10 +11,13 @@ def split_diff(diff: str, max_length: int) -> list[str]:
     Args:
         diff (str): The git diff content to split
         max_length (int): Maximum length for each chunk in characters
+        ignore_files (Optional[list[str]]): List of file names to exclude from the diff chunks
         
     Returns:
         list[str]: List of diff chunks, each smaller than max_length
     """
+    if ignore_files is None:
+        ignore_files = []
     if not diff:
         return []
     blocks = []
@@ -32,6 +36,11 @@ def split_diff(diff: str, max_length: int) -> list[str]:
     current_size = 0
 
     for block in blocks:
+        # Skip blocks for ignored files
+        files_in_block = get_files_from_diff(block)
+        if any( any(ignore_file in filename for filename in files_in_block) for ignore_file in ignore_files ):
+            continue
+            
         block_len = len(block)
         if block_len > max_length:
             if current_chunk:

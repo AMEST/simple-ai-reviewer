@@ -1,5 +1,5 @@
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Union
+from dataclasses import dataclass, fields
+from typing import Any, List, Optional, Union
 
 @dataclass
 class User:
@@ -30,9 +30,6 @@ class PullRequest:
     merged: bool
     merged_at: Optional[str]
 
-    def __post_init__(self):
-        self.merged_at = self.merged_at if self.merged_at else None
-
 @dataclass
 class RepoInIssue:
     id: int
@@ -47,15 +44,9 @@ class Permissions:
     pull: bool
 
 @dataclass
-class InternalTracker:
-    enable_time_tracker: bool
-    allow_only_contributors_to_track_time: bool
-    enable_issue_dependencies: bool
-
-@dataclass
 class Repository:
     id: int
-    owner: Union[User,str]
+    owner: Union[User,dict]
     name: str
     full_name: str
     description: str
@@ -83,9 +74,9 @@ class Repository:
     archived: bool
     created_at: str
     updated_at: str
-    permissions: Union[Permissions,str]
+    permissions: Union[Permissions,dict]
     has_issues: bool
-    internal_tracker: Union[InternalTracker,str]
+    internal_tracker: dict
     has_wiki: bool
     has_pull_requests: bool
     has_projects: bool
@@ -104,9 +95,10 @@ class Repository:
     repo_transfer: Optional[Any]
 
     def __post_init__(self):
-        self.owner = User(**self.owner) if isinstance(self.owner, dict) else self.owner
-        self.permissions = Permissions(**self.permissions)
-        self.internal_tracker = InternalTracker(**self.internal_tracker)
+        user_fields = {f.name for f in fields(User)}
+        self.owner = User(**{k: v for k, v in self.owner.items() if k in user_fields}) if isinstance(self.owner, dict) else self.owner
+        permissions_fields = {f.name for f in fields(Permissions)}
+        self.permissions = Permissions(**{k: v for k, v in self.permissions.items() if k in permissions_fields})
         self.parent = self.parent if self.parent else None
         self.repo_transfer = self.repo_transfer if self.repo_transfer else None
 
@@ -116,7 +108,7 @@ class Comment:
     html_url: str
     pull_request_url: str
     issue_url: str
-    user: Union[User,str]
+    user: Union[User,dict]
     original_author: str
     original_author_id: int
     body: str
@@ -124,7 +116,8 @@ class Comment:
     updated_at: str
 
     def __post_init__(self):
-        self.user = User(**self.user) if isinstance(self.user, dict) else self.user
+        user_fields = {f.name for f in fields(User)}
+        self.user = User(**{k: v for k, v in self.user.items() if k in user_fields}) if isinstance(self.user, dict) else self.user
 
 @dataclass
 class Issue:
@@ -132,7 +125,7 @@ class Issue:
     url: str
     html_url: str
     number: int
-    user: User
+    user: Union[User, dict]
     original_author: str
     original_author_id: int
     title: str
@@ -149,13 +142,16 @@ class Issue:
     updated_at: str
     closed_at: Optional[str]
     due_date: Optional[str]
-    pull_request: Union[PullRequest,str]
-    repository: Union[RepoInIssue,str]
+    pull_request: Union[PullRequest,dict]
+    repository: Union[RepoInIssue,dict]
 
     def __post_init__(self):
-        self.user = User(**self.user) if isinstance(self.user, dict) else self.user
-        self.pull_request = PullRequest(**self.pull_request)
-        self.repository = RepoInIssue(**self.repository)
+        user_fields = {f.name for f in fields(User)}
+        self.user = User(**{k: v for k, v in self.user.items() if k in user_fields}) if isinstance(self.user, dict) else self.user
+        pr_fields = {f.name for f in fields(PullRequest)}
+        self.pull_request = PullRequest(**{k: v for k, v in self.pull_request.items() if k in pr_fields})
+        repo_fields = {f.name for f in fields(RepoInIssue)}
+        self.repository = RepoInIssue(**{k: v for k, v in self.repository.items() if k in repo_fields})
         self.milestone = self.milestone if self.milestone else None
         self.assignee = self.assignee if self.assignee else None
         self.assignees = self.assignees if self.assignees else None
@@ -165,14 +161,18 @@ class Issue:
 @dataclass
 class GiteaWebhook:
     action: str
-    issue: Union[Issue,str]
-    comment: Union[Comment,str]
-    repository: Union[Repository,str]
-    sender: Union[User,str]
+    issue: Union[Issue,dict]
+    comment: Union[Comment,dict]
+    repository: Union[Repository,dict]
+    sender: Union[User,dict]
     is_pull: bool
 
     def __post_init__(self):
-        self.issue = Issue(**self.issue)
-        self.comment = Comment(**self.comment)
-        self.repository = Repository(**self.repository)
-        self.sender = User(**self.sender) if isinstance(self.sender, dict) else self.sender
+        issue_fields = {f.name for f in fields(Issue)}
+        self.issue = Issue(**{k: v for k, v in self.issue.items() if k in issue_fields})
+        comment_fields = {f.name for f in fields(Comment)}
+        self.comment = Comment(**{k: v for k, v in self.comment.items() if k in comment_fields})
+        repository_fields = {f.name for f in fields(Repository)}
+        self.repository = Repository(**{k: v for k, v in self.repository.items() if k in repository_fields})
+        sender_fields = {f.name for f in fields(User)}
+        self.sender = User(**{k: v for k, v in self.sender.items() if k in sender_fields}) if isinstance(self.sender, dict) else self.sender
