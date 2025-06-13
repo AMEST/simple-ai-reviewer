@@ -1,9 +1,12 @@
+import json
 import logging
 import re
+from dataclasses import asdict
 
 import requests
 
 from configuration.gitea_configuration import GiteaConfiguration
+from contracts.per_file_review_result import PerFileReviewResult
 from contracts.pr_url import PrUrl
 
 from services.git_service import GitService
@@ -83,3 +86,42 @@ class GiteaService(GitService):
             return False
         parsed_allowed_emails = re.split(r'[;,]\s*', self.configuration.allowed_emails.lower())
         return login.lower() in parsed_allowed_emails
+
+    def create_review(self, pr_url : PrUrl, review_result : list[PerFileReviewResult]) -> str:
+        create_review_url = f"{self.configuration.base_url}/api/v1/repos/{pr_url.owner}/{pr_url.repo}/pulls/{pr_url.pr_number}/reviews"
+        headers = {
+            "Authorization": f"token {self.configuration.token}",
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        }
+        payload = {
+            "event": "COMMENT",
+            "body": "🤖 AI Code Per File Reviewed!",
+            "comments": [asdict(r) for r in review_result]
+        }
+        for comment in payload["comments"]:
+            comment["new_position"] = comment["line"]
+            del comment["line"]
+        response = requests.post(create_review_url, json=payload, headers=headers, timeout=60 * 2) # send comment with 2 minutes timeout
+        if response.status_code != 200:
+            self.logger.error("Error creating review for %s. Status=%s.\n%s\n%s", create_review_url, response.status_code, response.text, json.dumps(payload))
+            return None
+        response_json : dict = response.json()
+        return response_json.get("id")
+
+    def complete_review(self, pr_url : PrUrl, review_identifier : str) -> None:
+        complete_review_url = f"{self.configuration.base_url}/api/v1/repos/{pr_url.owner}/{pr_url.repo}/pulls/{pr_url.pr_number}/reviews/{review_identifier}"
+        headers = {
+            "Authorization": f"token {self.configuration.token}",
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        }
+        payload = {
+            "event": "COMMENT",
+            "body": "🤖 AI Code Review Per File completed!"
+        }
+        response = requests.post(complete_review_url, json=payload, headers=headers, timeout=60 * 2) # send comment with 2 minutes timeout
+        if response.status_code in (200,201):
+            return
+        self.logger.error("Error completing review for %s. Status=%s.\n%s", complete_review_url, response.status_code, response.text)
+

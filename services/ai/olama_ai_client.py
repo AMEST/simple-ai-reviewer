@@ -86,7 +86,7 @@ class OllamaAIClient(AIClient):
             "messages": messages,
             "stream": False
         }
-        response = requests.post(f"{self.configuration.base_url}/api/chat", json=request_data)
+        response = requests.post(f"{self.configuration.base_url}/api/chat", json=request_data, timeout=60 * 10)
         response.raise_for_status()
         response_object = Response(**response.json())
         if not response_object.done:

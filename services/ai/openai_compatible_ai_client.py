@@ -1,11 +1,11 @@
+import logging
+import httpx
 import requests
-from dataclasses import dataclass
-from openai import OpenAI
+import time
+from openai import OpenAI, APITimeoutError
 
 from services.ai.ai_client import AIClient
 from configuration.llm_configuration import LLMConfiguration
-
-
 
 class OpenAICompatibleAIClient(AIClient):
     """
@@ -26,6 +26,7 @@ class OpenAICompatibleAIClient(AIClient):
             configuration (LLMConfiguration): Configuration containing API token and base URL
         """
         self.configuration = configuration
+        self.logger = logging.getLogger(OpenAICompatibleAIClient.__name__)
         self.client = OpenAI(
             api_key=configuration.token,
             base_url=configuration.base_url
@@ -42,11 +43,23 @@ class OpenAICompatibleAIClient(AIClient):
         Returns:
             str: The generated completion text, or None if no valid response
         """
-        response = self.client.chat.completions.create(
-            messages=messages,
-            model=model,
-            max_tokens=50000
-        )
-        if len(response.choices) == 0:
-            return None
-        return response.choices[0].message.content
+        max_retries = 3
+        retry_delay = 1
+        
+        for attempt in range(max_retries):
+            try:
+                response = self.client.chat.completions.create(
+                    messages=messages,
+                    model=model,
+                    max_tokens=50000,
+                    timeout=httpx.Timeout(60 * 5)
+                )
+                if len(response.choices) == 0:
+                    return None
+                return response.choices[0].message.content
+            except (httpx.TimeoutException, requests.exceptions.Timeout, APITimeoutError) as e:
+                if attempt == max_retries - 1:
+                    raise
+                self.logger.warning("%s. Retrying request in %s seconds", e.__class__.__name__, retry_delay)
+                time.sleep(retry_delay)
+                retry_delay *= 2

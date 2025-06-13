@@ -1,9 +1,12 @@
+from dataclasses import asdict
+import json
 import logging
 import re
 
 import requests
 
 from configuration.github_configuration import GithubConfiguration
+from contracts.per_file_review_result import PerFileReviewResult
 from contracts.pr_url import PrUrl
 
 from services.git_service import GitService
@@ -84,3 +87,39 @@ class GithubService(GitService):
             return False
         parsed_allowed_logins = re.split(r'[;,]\s*', self.configuration.allowed_logins.lower())
         return login.lower() in parsed_allowed_logins
+
+    def create_review(self, pr_url : PrUrl, review_result: list[PerFileReviewResult]) -> str:
+        latest_commit_sha = self.__get_latest_commit_sha(pr_url)
+        create_review_url = f"https://api.github.com/repos/{pr_url.owner}/{pr_url.repo}/pulls/{pr_url.pr_number}/reviews"
+        headers = {
+            "Authorization": f"token {self.configuration.token}",
+            "Accept": "application/vnd.github.v3+json"
+        }
+        payload = {
+            "commit_id": latest_commit_sha,
+            "body": "🤖 AI Code Per File Reviewed!",
+            "event": "COMMENT", 
+            "comments": [asdict(r) for r in review_result]
+        }
+        response = requests.post(create_review_url, json=payload, headers=headers, timeout=60 * 2) # send comment with 2 minutes timeout
+        if response.status_code != 200:
+            self.logger.error("Error creating review for %s. Status=%s.\n%s\n%s", create_review_url, response.status_code, response.text, json.dumps(payload))
+            return None
+        response_json : dict = response.json()
+        return response_json.get("id")
+    
+    def complete_review(self, pr_url : PrUrl, review_identifier : str) -> None:
+        pass
+
+    def __get_latest_commit_sha(self, pr_url: PrUrl) -> str:
+        url = f"https://api.github.com/repos/{pr_url.owner}/{pr_url.repo}/pulls/{pr_url.pr_number}"
+        headers = {
+            "Authorization": f"token {self.configuration.token}",
+            "Accept": "application/vnd.github.v3+json"
+        }
+        
+        response = requests.get(url, headers=headers, timeout=60 * 2)
+        response.raise_for_status()
+        
+        pr_data = response.json()
+        return pr_data["head"]["sha"]

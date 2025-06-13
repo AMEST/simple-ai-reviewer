@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+from contracts.per_file_review_result import PerFileReviewResult
 from contracts.pr_url import PrUrl
 
 
@@ -30,6 +31,29 @@ class GitService(ABC):
         Args:
             pr_url (PrUrl): The pull request URL object containing repository and PR information
             text (str): The comment text to post
+        """
+
+    @abstractmethod
+    def create_review(self, pr_url : PrUrl, review_result : list[PerFileReviewResult]) -> str:
+        """
+        Create review in Pull Request
+
+        Args:
+            pr_url (PrUrl): The pull request URL object containing repository and PR information
+            review_result (list[PerFileReviewResult]): Comments to files
+        
+        Returns:
+            str: Review Identifier
+        """
+
+    @abstractmethod
+    def complete_review(self, pr_url: PrUrl, review_identifier: str) -> None:
+        """
+        Complete review in Pull Request and publish comments
+
+        Args:
+            pr_url (PrUrl): The pull request URL object containing repository and PR information
+            review_identifier (str): Review identifier
         """
 
     @abstractmethod

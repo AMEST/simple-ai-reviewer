@@ -83,3 +83,66 @@ def get_files_from_diff(diff_text):
         if match:
             files.append(match.group(1))
     return list(set(files))  # Remove duplicates
+
+def get_changed_lines(diff_text : str) -> dict:
+    """
+    Analyzes diff text and returns dictionary with information about actually changed lines (+/-) for each file.
+
+    Args:
+    diff_text (str): Diff text in git diff format
+
+    Returns:
+    dict: Dictionary where keys are file names, values are dictionaries with keys:
+    - 'added': list of added lines
+    - 'removed': list of removed lines
+    """
+    file_changes = {}
+    current_file = None
+    current_hunk = None
+    
+    # Regular expressions
+    file_header_re = re.compile(r'^diff --git a/(.*?) b/(.*?)$', re.MULTILINE)
+    hunk_header_re = re.compile(r'^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@', re.MULTILINE)
+    changed_line_re = re.compile(r'^([+-])(?!\+\+ |--- )(.+)', re.MULTILINE)
+    
+    for line in diff_text.split('\n'):
+        # Check for start of new file
+        file_match = file_header_re.match(line)
+        if file_match:
+            current_file = file_match.group(2)
+            file_changes[current_file] = {'added': [], 'removed': []}
+            continue
+        
+        # Check for start of new hunk
+        hunk_match = hunk_header_re.match(line)
+        if hunk_match and current_file:
+            old_start = int(hunk_match.group(1))
+            new_start = int(hunk_match.group(3))
+            current_hunk = {
+                'old_line': old_start,
+                'new_line': new_start,
+                'current_old': old_start,
+                'current_new': new_start
+            }
+            continue
+        
+        # Analyze changed lines
+        if current_file and current_hunk:
+            line_type_match = changed_line_re.match(line)
+            if line_type_match:
+                line_type = line_type_match.group(1)
+                content = line_type_match.group(2)
+                
+                if line_type == '+':
+                    file_changes[current_file]['added'].append(current_hunk['new_line'])
+                    current_hunk['new_line'] += 1
+                elif line_type == '-':
+                    file_changes[current_file]['removed'].append(current_hunk['old_line'])
+                    current_hunk['old_line'] += 1
+            else:
+                # Normal line (no + or -) - increment both counters
+                if not line.startswith('---') and not line.startswith('+++'):
+                    current_hunk['old_line'] += 1
+                    current_hunk['new_line'] += 1
+    
+    return file_changes

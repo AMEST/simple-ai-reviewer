@@ -45,7 +45,7 @@ class Worker(threading.Thread):
             try:
                 review_task: ReviewTask  = self.queue.dequeue()
                 if review_task is None:
-                    time.sleep(60) # Check for new tasks every 60 seconds
+                    time.sleep(20) # Check for new tasks every 20 seconds. Needs for operative task processing
                     continue
                 if review_task.git_service == "gitea":
                     self.__process_review(self.gitea_service, review_task)
@@ -55,8 +55,8 @@ class Worker(threading.Thread):
                     self.logger.error("Unknown git service: %s", review_task.git_service)
             except Exception as e:
                 self.logger.error("Error in worker thread: %s", e, exc_info=True)
-                time.sleep(60 * 10) # Wait longer after an error
-            time.sleep(60) # Check for new tasks every 60 seconds
+                time.sleep(60 * 5) # Wait longer after an error
+            time.sleep(20) # Check for new tasks every 20 seconds. Needs for operative task processing
 
     def __process_review(self, service: GitService, review_task: ReviewTask) -> None:
         """
@@ -66,15 +66,23 @@ class Worker(threading.Thread):
             service (GitService): The Git service to use for the review
             review_task (ReviewTask): The review task to process
         """
+        if not self.review_service.is_comment_review_enabled and not self.review_service.is_conversation_review_enabled:
+            self.logger.warning("All review methods disabled. Review can't be completed. Ignoring event")
+            return
+        
         try:
             pull_request = PrUrl.create_from_url(review_task.pull_request_url)
             self.logger.info("Start review (%s) %s/%s #%s", review_task.git_service, pull_request.owner, pull_request.repo, pull_request.pr_number)
             diff = service.get_pr_diff(pull_request)
             self.logger.info("Send diff to LLM for review")
-            review_batch = self.review_service.review_pull_request(diff, review_task.user_message)
-            for review in review_batch:
-                service.post_comment(pull_request, review)
+            if self.review_service.is_comment_review_enabled:
+                review_batch = self.review_service.review_pull_request(diff, review_task.user_message)
+                for review in review_batch:
+                    service.post_comment(pull_request, review)
+            if self.review_service.is_conversation_review_enabled:
+                per_file_review_batch = self.review_service.per_file_review_pull_request(diff)
+                service.create_review(pull_request, per_file_review_batch)
             self.logger.info("Review completed")
         except Exception as e:
             self.logger.error("Error during review process for PR (%s) %s: %s", review_task.git_service, review_task.pull_request_url, e, exc_info=True)
-            time.sleep(60 * 10) # Wait longer after an error
+            time.sleep(60 * 5) # Wait longer after an error
