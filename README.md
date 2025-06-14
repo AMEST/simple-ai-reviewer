@@ -1,28 +1,36 @@
-# Simple AI Reviewer
+# 🚀 Simple AI Reviewer
 
-## Description
+<div align="center">
+  <img src="ai-reviewer2.png"/>
+</div>
 
-The Simple AI Reviewer is designed to assist developers working alone. It aims to highlight potential issues within a codebase, offer suggestions for improvements, or simply provide a fresh perspective.   
-It's important to note that its outputs may be insightful, misleading, or entirely useless - treat its suggestions with a healthy dose of skepticism.  This tool is intended as a supplement to your own expertise, not a replacement for it.
+## 📝 Description
 
-## Compatibility with git hosting
+The **Simple AI Reviewer** is designed to assist developers working alone. It aims to highlight potential issues within a codebase, offer suggestions for improvements, or simply provide a fresh perspective.   
 
-At now, supports only Gitea and Github
+⚠️ **Important Note**:  
+Its outputs may be insightful, misleading, or entirely useless — treat its suggestions with a healthy dose of skepticism. This tool is intended as a **supplement to your own expertise**, not a replacement for it.
 
-## Getting Started
+## 🌐 Compatibility with Git Hosting
 
-### General preparation
+Currently supports:  
+* **Gitea**
+* **Github**
 
-**Clone the repository**
+## 🛠 Getting Started
+
+### 🔧 General preparation
+
+**1️⃣ Clone the repository**
 ```bash
 git clone https://github.com/amest/simple-ai-reviewer.git
 ```
 
-**Configure Git hosting:**
+**2️⃣ Configure Git hosting:**
 - If using Gitea - [configure Gitea ](#gitea)
 - If using Github - [configure Github ](#github)
 
-### Docker
+### 🐳 Docker
 
 To run the application using Docker, follow these steps:
 
@@ -56,7 +64,7 @@ python main.py
 
 The service will start and listen on the configured host and port (default: localhost:8888).
 
-### Configuration
+### ⚙️ Configuration
 
 #### Gitea
 - Create user (example: `ai-reviewer`) **_Optional_**
@@ -100,20 +108,20 @@ The service will start and listen on the configured host and port (default: loca
 | `review` | `review_as_comments`      | flag for enable/disable process review and send as simple comment in Pull Request                                                  |
 | `review` | `review_as_conversations` | flag for enable/disable process review and send as conversations to files in pull request (comments applied to files in `Changes`) |
 
-## Example Usage
+## 🎯 Example Usage
 
 1. Create a Pull Request in your Gitea/Github repository
 2. Write comment in PR with text `/start_review`
-3. The AI Reviewer will automatically analyze the changes and post comments
-4. Review the suggestions and apply them as needed
+3. 🤖 The AI Reviewer will automatically analyze the changes and post comments
+4. 🔍 Review the suggestions and apply them as needed
 
-## Notes
+## 📌 Notes
 
 *   This is a basic implementation and may require adjustments based on your project's specific needs.
 *   Consider providing feedback to help improve the accuracy and usefulness of the AI reviewer.
 *   Remember to validate the reviewer's findings and use your own judgment.
-*   **Some file reviews may miss lines to which the comment pertains (while this feature exists, it depends on the model used)**
-*   **In principle, a lot depends on the models used to conduct the review. Testing was done with the following models:**
+*   **❗Some file reviews may miss lines to which the comment pertains (while this feature exists, it depends on the model used)**
+*   **❗In principle, a lot depends on the models used to conduct the review. Testing was done with the following models:**
     *   `Ollama`
         *   `Gemma3:1b` - Weak and suitable for very simple Pull Requests, but in general it finds and highlights useful things. In the per-file review mode - useless
         *   `Gemma3:4b` - Relatively well reviews in the regular comments mode (as far as possible for a small model), but in the per-file review mode it poorly specifies files and lines; It can link all comments to one file. Per-file mode is not even worth trying
