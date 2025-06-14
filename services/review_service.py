@@ -7,7 +7,7 @@ from services.ai.ai_client import AIClient
 from configuration.review_configuration import ReviewConfiguration, Language
 from configuration.llm_configuration import LLMConfiguration
 
-from utils.diff_utils import split_diff, get_files_from_diff, get_changed_lines
+from utils.diff_utils import split_diff, get_files_from_diff, get_changed_lines, annotate_diff_with_line_numbers
 from utils.text_utils import extract_json_blocks
 
 class ReviewService:
@@ -43,10 +43,20 @@ class ReviewService:
 
     @property
     def is_comment_review_enabled(self):
+        """Returns whether comment-based review mode is enabled.
+        
+        Returns:
+            bool: True if comment-based review is enabled, False otherwise
+        """
         return self.configuration.review_as_comments
     
     @property
     def is_conversation_review_enabled(self):
+        """Returns whether conversation-based review mode is enabled.
+        
+        Returns:
+            bool: True if conversation-based review is enabled, False otherwise
+        """
         return self.configuration.review_as_conversations
 
     def review_pull_request(self, diff: str, user_message: str = None) -> list[str]:
@@ -62,7 +72,7 @@ class ReviewService:
         """
         results = []
         splited_diff = split_diff(diff, 12000, self.configuration.ignore_files)
-        self.logger.info(f"Received diff (len = {len(diff)}) for automatic review. Split to {len(splited_diff)} diffs")
+        self.logger.info("Received diff (len = %s) for automatic review. Split to %s diffs", len(diff), len(splited_diff))
         for diff_slice in splited_diff:
             file_names = "\n* ".join(get_files_from_diff(diff_slice))
             prompt = self.__en_prompt(diff_slice, user_message) if self.configuration.language == Language.EN else self.__ru_prompt(diff_slice, user_message)
@@ -81,9 +91,9 @@ class ReviewService:
             list[dict]: List of review results, one for each diff chunk
         """
         results = []
-        changed_lines = get_changed_lines(diff)
+        changed_lines = get_changed_lines(annotate_diff_with_line_numbers(diff))
         splited_diff = split_diff(diff, 12000, self.configuration.ignore_files)
-        self.logger.info(f"Received diff (len = {len(diff)}) for automatic per file review. Split to {len(splited_diff)} diffs")
+        self.logger.info("Received diff (len = %s) for automatic per file review. Split to %s diffs", len(diff), len(splited_diff))
         for diff_slice in splited_diff:
             prompt = self.__en_per_file_prompt(diff_slice) if self.configuration.language == Language.EN else self.__ru_per_file_prompt(diff_slice)
             review_result = self.ai_client.completions([self.system_prompt, {"role":"user","content":prompt}], self.llm_configuration.model)

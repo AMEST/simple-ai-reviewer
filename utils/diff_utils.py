@@ -146,3 +146,70 @@ def get_changed_lines(diff_text : str) -> dict:
                     current_hunk['new_line'] += 1
     
     return file_changes
+
+def annotate_diff_with_line_numbers(diff_text):
+    """
+    Adds correct line numbers to the diff text.
+
+    Args:
+        diff_text(str): The original diff text
+
+    Returns:
+        str: The diff text with line numbers added
+    """
+    result = []
+    old_line = 0
+    new_line = 0
+    in_hunk = False
+    
+    for line in diff_text.split('\n'):
+        # Processing the beginning of a new file
+        if line.startswith('diff --git'):
+            result.append(line)
+            old_line = 0
+            new_line = 0
+            in_hunk = False
+            continue
+        
+        # Processing file headers (--- / +++)
+        if line.startswith('--- ') or line.startswith('+++ '):
+            result.append(line)
+            continue
+        
+        # Processing the beginning of the hunk
+        if line.startswith('@@ '):
+            match = re.match(r'@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@', line)
+            if match:
+                old_line = int(match.group(1))
+                new_line = int(match.group(3))
+            in_hunk = True
+            result.append(line)
+            continue
+        
+        if not in_hunk:
+            result.append(line)
+            continue
+        
+        # Context line (unchanged)
+        if line.startswith(' '):
+            # Context line (unchanged)
+            annotated = f"{old_line:3} | {line}"
+            old_line += 1
+            new_line += 1
+        elif line.startswith('-'):
+            # Deleted line (only in old file)
+            annotated = f"{old_line:3} | {line}"
+            old_line += 1
+        elif line.startswith('+'):
+            # Added line (only in new file)
+            annotated = f"{new_line:3} | {line}"
+            new_line += 1
+        elif line.startswith('\\'):
+            # Special line (No newline at end of file)
+            annotated = f"    | {line}"
+        else:
+            annotated = line
+        
+        result.append(annotated)
+    
+    return '\n'.join(result)
