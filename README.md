@@ -1,7 +1,7 @@
 # 🚀 Simple AI Reviewer
 
 <div align="center">
-  <img src="ai-reviewer2.png"/>
+  <img src="ai-reviewer2.png" height="256px"/>
 </div>
 
 ## 📝 Description
