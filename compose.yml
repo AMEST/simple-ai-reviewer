@@ -1,0 +1,22 @@
+version: "3"
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '8888:8888'
+    environment:
+      - web:token=AUTH_TOKEN_FOR_WEBHOOKS_GENERATE_AND_CHANGE_ME
+      - web:port=8888
+      - web:host=0.0.0.0
+      - gitea:base_url=GITEA_BASE_URL
+      - gitea:token=GITEA_ACCESS_TOKEN
+      - gitea:allowed_emails=*
+      - github:token=GITHUB_PRIVATE_ACCESS_TOKEN
+      - github:allowed_logins=*
+      - llm:type=ollama
+      - llm:model=gemma3:12b
+      - llm:base_url=http://192.168.0.60:11434 # ollama exposed to local network (Because you can only access the container via an external address (localhost inside the container != localhost of the host machine)
+      - review:review_as_conversations=true #enable review as conversation
+    restart: unless-stopped
