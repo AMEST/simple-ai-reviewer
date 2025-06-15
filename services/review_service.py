@@ -7,7 +7,7 @@ from services.ai.ai_client import AIClient
 from configuration.review_configuration import ReviewConfiguration, Language
 from configuration.llm_configuration import LLMConfiguration
 
-from utils.diff_utils import split_diff, get_files_from_diff, get_changed_lines
+from utils.diff_utils import split_diff, get_files_from_diff, get_changed_lines, annotate_diff_with_line_numbers
 from utils.text_utils import extract_json_blocks
 
 class ReviewService:
@@ -43,10 +43,20 @@ class ReviewService:
 
     @property
     def is_comment_review_enabled(self):
+        """Returns whether comment-based review mode is enabled.
+        
+        Returns:
+            bool: True if comment-based review is enabled, False otherwise
+        """
         return self.configuration.review_as_comments
     
     @property
     def is_conversation_review_enabled(self):
+        """Returns whether conversation-based review mode is enabled.
+        
+        Returns:
+            bool: True if conversation-based review is enabled, False otherwise
+        """
         return self.configuration.review_as_conversations
 
     def review_pull_request(self, diff: str, user_message: str = None) -> list[str]:
@@ -62,7 +72,7 @@ class ReviewService:
         """
         results = []
         splited_diff = split_diff(diff, 12000, self.configuration.ignore_files)
-        self.logger.info(f"Received diff (len = {len(diff)}) for automatic review. Split to {len(splited_diff)} diffs")
+        self.logger.info("Received diff (len = %s) for automatic review. Split to %s diffs", len(diff), len(splited_diff))
         for diff_slice in splited_diff:
             file_names = "\n* ".join(get_files_from_diff(diff_slice))
             prompt = self.__en_prompt(diff_slice, user_message) if self.configuration.language == Language.EN else self.__ru_prompt(diff_slice, user_message)
@@ -82,8 +92,8 @@ class ReviewService:
         """
         results = []
         changed_lines = get_changed_lines(diff)
-        splited_diff = split_diff(diff, 12000, self.configuration.ignore_files)
-        self.logger.info(f"Received diff (len = {len(diff)}) for automatic per file review. Split to {len(splited_diff)} diffs")
+        splited_diff = split_diff(annotate_diff_with_line_numbers(diff), 12000, self.configuration.ignore_files)
+        self.logger.info("Received diff (len = %s) for automatic per file review. Split to %s diffs", len(diff), len(splited_diff))
         for diff_slice in splited_diff:
             prompt = self.__en_per_file_prompt(diff_slice) if self.configuration.language == Language.EN else self.__ru_per_file_prompt(diff_slice)
             review_result = self.ai_client.completions([self.system_prompt, {"role":"user","content":prompt}], self.llm_configuration.model)
@@ -191,7 +201,7 @@ Format your answer as a list with tags: ✅ Pros, ⚠️ Problems, 💡 Tips{", 
 
 Для каждой найденной проблемы предоставьте:
 1. Четкое описание
-2. Конкретный номер строки из diff (используйте точный номер строки, где необходимо изменение)
+2. Конкретный номер строки из diff (используйте точный номер строки, где необходимо изменение (номер строки указан в начале строки до знака "|"))
 3. Предлагаемое исправление кода
 
 Выведите ТОЛЬКО массив JSON, соответствующий этой точной структуре:
@@ -205,7 +215,7 @@ Format your answer as a list with tags: ✅ Pros, ⚠️ Problems, 💡 Tips{", 
 ]
 
 Важно:
-1. Номера строк ДОЛЖНЫ соответствовать фактическим номерам строк в diff
+1. Номера строк ДОЛЖНЫ соответствовать фактическим номерам строк в diff (номер строки указан в начале строки до знака "|")
 2. Включайте только элементы, требующие действий, с определенными местоположениями
 3. Никогда не добавляйте комментарии вне структуры JSON
 4. Для перемещенных/переименованных файлов используйте конечный путь из diff
@@ -236,7 +246,7 @@ Perform detailed analysis of each changed file for:
 
 For each issue found, provide:
 1. Clear description
-2. Specific line number from the diff (use the exact line number where change is needed)
+2. Specific line number from the diff (use the exact line number where change is needed (the line number is indicated at the beginning of the line before the "|" sign))
 3. Suggested code fix
 
 Output ONLY a JSON array following this exact structure:
@@ -250,7 +260,7 @@ Output ONLY a JSON array following this exact structure:
 ]
 
 Important:
-1. Line numbers MUST correspond to the actual line numbers in the diff
+1. Line numbers MUST correspond to the actual line numbers in the diff (the line number is indicated at the beginning of the line before the "|" sign)
 2. Include only actionable items with specific locations
 3. Never add comments outside JSON structure
 4. For moved/renamed files, use final path from diff
