@@ -111,10 +111,13 @@ class ReviewService:
                     continue
                 added_lines = changed_lines_in_file.get("added")
                 removed_lines = changed_lines_in_file.get("removed")
+                candidates = []
                 if len(added_lines) > 0:
-                    per_file_result.line = min(added_lines, key=lambda x: abs(x - (per_file_result.line + 1)))
-                elif len(removed_lines) > 0:
-                    per_file_result.line = min(removed_lines, key=lambda x: abs(x - (per_file_result.line + 1)))
+                    candidates.append(min(added_lines, key=lambda x: abs(x - (per_file_result.line))))
+                if len(removed_lines) > 0:
+                    candidates.append(min(removed_lines, key=lambda x: abs(x - (per_file_result.line))))
+                if len(candidates) > 0:
+                    per_file_result.line = min(candidates, key=lambda x: abs(x - (per_file_result.line)))
                 else:
                     continue
                 results.append(per_file_result)
@@ -220,6 +223,7 @@ Format your answer as a list with tags: ✅ Pros, ⚠️ Problems, 💡 Tips{", 
 3. Никогда не добавляйте комментарии вне структуры JSON
 4. Для перемещенных/переименованных файлов используйте конечный путь из diff
 5. Для многострочных изменений укажите конечный номер строки
+6. Игнорируй дублирование номеров строк в diff
 """
 
     def __en_per_file_prompt(self, diff: str) -> str:
@@ -265,4 +269,5 @@ Important:
 3. Never add comments outside JSON structure
 4. For moved/renamed files, use final path from diff
 5. For multiline changes, reference ending line number
+6. Ignore line number duplicates in diff
 """

@@ -147,7 +147,7 @@ def get_changed_lines(diff_text : str) -> dict:
     
     return file_changes
 
-def annotate_diff_with_line_numbers(diff_text):
+def annotate_diff_with_line_numbers(diff_text: str) -> str:
     """
     Adds correct line numbers to the diff text.
 
@@ -193,17 +193,19 @@ def annotate_diff_with_line_numbers(diff_text):
         # Context line (unchanged)
         if line.startswith(' '):
             # Context line (unchanged)
-            annotated = f"{old_line:3} | {line}"
+            annotated = f"{new_line:3} | {line}"
             old_line += 1
             new_line += 1
         elif line.startswith('-'):
             # Deleted line (only in old file)
             annotated = f"{old_line:3} | {line}"
             old_line += 1
+            # Don't increment new_line for deleted lines
         elif line.startswith('+'):
             # Added line (only in new file)
             annotated = f"{new_line:3} | {line}"
             new_line += 1
+            # Don't increment old_line for added lines
         elif line.startswith('\\'):
             # Special line (No newline at end of file)
             annotated = f"    | {line}"
